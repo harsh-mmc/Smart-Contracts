@@ -14,7 +14,7 @@ contract Bank {
 contract crossFunction {
     mapping (address => uint) private userBalances;
 
-    function transfer(address to, uint amount) public {
+    function mytransfer(address to, uint amount) public {
         if (userBalances[msg.sender] >= amount) {
         userBalances[to] += amount;
         userBalances[msg.sender] -= amount;
