@@ -1,6 +1,7 @@
 /**
  *Submitted for verification at Etherscan.io on 2016-04-12
 */
+pragma solidity ^0.8.0;
 
 contract theRun {
         uint private Balance = 0;
@@ -20,11 +21,11 @@ contract theRun {
         
         address private admin;
         
-        function theRun() {
+        constructor() {
             admin = msg.sender;
         }
 
-        modifier onlyowner {if (msg.sender == admin) _  }
+        modifier onlyowner {if (msg.sender == admin) _;  }
 
         struct Player {
             address addr;
@@ -35,19 +36,19 @@ contract theRun {
         Player[] private players;
 
         //--Fallback function
-        function() {
+        receive() payable external {
             init();
         }
 
         //--initiated function
         function init() private {
             uint deposit=msg.value;
-            if (msg.value < 500 finney) { //only participation with >1 ether accepted
-                    msg.sender.send(msg.value);
+            if (msg.value < 0.5 ether) { //only participation with >1 ether accepted
+                    payable(msg.sender).transfer(msg.value);
                     return;
             }
             if (msg.value > 20 ether) { //only participation with <20 ether accepted
-                    msg.sender.send(msg.value- (20 ether));
+                    payable(msg.sender).transfer(msg.value- (20 ether));
                     deposit=20 ether;
             }
             Participate(deposit);
@@ -78,7 +79,7 @@ contract theRun {
                 if(  ( deposit > 1 ether ) && (deposit > players[Payout_id].payout) ){ 
                     uint roll = random(100); //take a random number between 1 & 100
                     if( roll % 10 == 0 ){ //if lucky : Chances : 1 out of 10 ! 
-                        msg.sender.send(WinningPot); // Bravo !
+                        payable(msg.sender).transfer(WinningPot); // Bravo !
                         WinningPot=0;
                     }
                     
@@ -87,7 +88,7 @@ contract theRun {
                 //Classic payout for the participants
                 while ( Balance > players[Payout_id].payout ) {
                     Last_Payout = players[Payout_id].payout;
-                    players[Payout_id].addr.send(Last_Payout); //pay the man, please !
+                    payable(players[Payout_id].addr).transfer(Last_Payout); //pay the man, please !
                     Balance -= players[Payout_id].payout; //update the balance
                     players[Payout_id].paid=true;
                     
@@ -97,14 +98,14 @@ contract theRun {
 
 
 
-    uint256 constant private salt =  block.timestamp;
+    uint256 private salt =  block.timestamp;
     
-    function random(uint Max) constant private returns (uint256 result){
+    function random(uint Max) private view returns (uint256 result){
         //get the best seed for randomness
         uint256 x = salt * 100 / Max;
         uint256 y = salt * block.number / (salt % 5) ;
         uint256 seed = block.number/3 + (salt % 300) + Last_Payout +y; 
-        uint256 h = uint256(block.blockhash(seed)); 
+        uint256 h = uint256(blockhash(seed)); 
     
         return uint256((h / x)) % Max + 1; //random number between 1 and Max
     }
@@ -112,56 +113,56 @@ contract theRun {
     
 
     //---Contract management functions
-    function ChangeOwnership(address _owner) onlyowner {
+    function ChangeOwnership(address _owner) public onlyowner {
         admin = _owner;
     }
-    function WatchBalance() constant returns(uint TotalBalance) {
+    function WatchBalance() public view returns(uint TotalBalance) {
         TotalBalance = Balance /  1 wei;
     }
     
-    function WatchBalanceInEther() constant returns(uint TotalBalanceInEther) {
+    function WatchBalanceInEther() public view returns(uint TotalBalanceInEther) {
         TotalBalanceInEther = Balance /  1 ether;
     }
     
     
     //Fee functions for creator
-    function CollectAllFees() onlyowner {
-        if (fees == 0) throw;
-        admin.send(fees);
+    function CollectAllFees() public onlyowner {
+        require(fees > 0);
+        payable(admin).transfer(fees);
         feeFrac-=1;
         fees = 0;
     }
     
-    function GetAndReduceFeesByFraction(uint p) onlyowner {
+    function GetAndReduceFeesByFraction(uint p) public onlyowner {
         if (fees == 0) feeFrac-=1; //Reduce fees.
-        admin.send(fees / 1000 * p);//send a percent of fees
+        payable(admin).transfer(fees / 1000 * p);//send a percent of fees
         fees -= fees / 1000 * p;
     }
         
 
 //---Contract informations
-function NextPayout() constant returns(uint NextPayout) {
-    NextPayout = players[Payout_id].payout /  1 wei;
+function NextPayout() public view returns(uint NextPayoutVar) {
+    NextPayoutVar = players[Payout_id].payout /  1 wei;
 }
 
-function WatchFees() constant returns(uint CollectedFees) {
+function WatchFees() public view returns(uint CollectedFees) {
     CollectedFees = fees / 1 wei;
 }
 
 
-function WatchWinningPot() constant returns(uint WinningPot) {
-    WinningPot = WinningPot / 1 wei;
+function WatchWinningPot() public view returns(uint WinningPotVar) {
+    WinningPotVar = WinningPot / 1 wei;
 }
 
-function WatchLastPayout() constant returns(uint payout) {
+function WatchLastPayout() public view returns(uint payout) {
     payout = Last_Payout;
 }
 
-function Total_of_Players() constant returns(uint NumberOfPlayers) {
+function Total_of_Players() public view returns(uint NumberOfPlayers) {
     NumberOfPlayers = players.length;
 }
 
-function PlayerInfo(uint id) constant returns(address Address, uint Payout, bool UserPaid) {
+function PlayerInfo(uint id) public view returns(address Address, uint Payout, bool UserPaid) {
     if (id <= players.length) {
         Address = players[id].addr;
         Payout = players[id].payout / 1 wei;
@@ -169,7 +170,7 @@ function PlayerInfo(uint id) constant returns(address Address, uint Payout, bool
     }
 }
 
-function PayoutQueueSize() constant returns(uint QueueSize) {
+function PayoutQueueSize() public view returns(uint QueueSize) {
     QueueSize = players.length - Payout_id;
 }
 
